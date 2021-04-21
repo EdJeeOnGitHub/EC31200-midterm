@@ -10,7 +10,8 @@ native_df <- read_dta("data/input/forcedcoexistence_webfinal.dta")
 # subset of the data for 2000, used for most 
 # tables and regressions
 native_current_df <- native_df %>%
-    filter(year == 2000)
+    filter(year == 2000) %>%
+    rename(instrument_silver = intrument_silver) # fixing a typo in the orig
 
 
 ## Summary Stats
@@ -218,7 +219,6 @@ test_that("Table 2 Panel B Replicates", {
 })
 
 
-
 etable(
     fe_models,
     title = "FE - Dippel Table 2, Panel B",
@@ -233,3 +233,63 @@ etable(
 
 
 
+# IV time
+create_iv_formula <- function(controls,
+                              fixed_effects = NULL,
+                              instruments) {
+    base_formula <- "logpcinc ~ HC"
+    base_control <- paste0(base_formula, " + ", paste(controls, collapse = " + "))
+    
+    if (!is.null(fixed_effects)) {
+        base_control_fe <- paste0(base_control, " | ", fixed_effects)
+    } else {
+        base_control_fe <- base_control
+    }
+
+    base_control_fe_iv <- paste0(base_control_fe, "| FC ~", instruments) 
+
+    final_formula <- as.formula(base_control_fe_iv)
+    return(final_formula)
+}
+
+
+additional_iv_controls <- c(
+    "homelandruggedness",
+    "logdist",
+    "wgold_enviro",
+    "wsilver_enviro"
+)
+iv_formulae <- list(
+    "HC", # base formula + intercept
+    c("HC", reservation_controls), 
+    c("HC", reservation_controls, tribe_controls),
+    c("HC", reservation_controls, tribe_controls, additional_reserve_controls),
+    c("HC", reservation_controls, tribe_controls, additional_reserve_controls, "0 | statenumber"), # + state FE
+    c("HC", reservation_controls, tribe_controls, additional_reserve_controls, additional_iv_controls, "0 | statenumber")
+) %>%
+    map(~create_iv_formula(
+        controls = .x,
+        instruments = "instrument_gold + instrument_silver"
+    ))
+
+
+iv_2_models <- iv_formulae %>%
+    map(~feols(
+        fml = .x,
+        data = native_current_df,
+        cluster = ~eaid + statenumber
+    ))  
+iv_2_models
+
+etable(
+    iv_2_models,
+    title = "IV - Dippel Table 5, Panel A",
+    group = group_replacement,
+    drop = c("(Intercept)"),
+    dict = dict_replacment,
+    coefstat = "tstat",
+    tex = TRUE,
+    replace = TRUE,
+    file = "data/output/table-5-iv-A.tex",
+    digits = 3
+)
