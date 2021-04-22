@@ -5,6 +5,10 @@ library(haven) # reading stata files
 library(testthat) # testing replication
 library(fixest) # fixed effects/iv regression
 library(broom) # tidy model extraction
+
+############################################
+## Data ####################################
+############################################
 # loading data
 native_df <- read_dta("data/input/forcedcoexistence_webfinal.dta")
 # subset of the data for 2000, used for most 
@@ -14,6 +18,9 @@ native_current_df <- native_df %>%
     rename(instrument_silver = intrument_silver) # fixing a typo in the orig
 
 
+############################################
+## Summary Stats ###########################
+############################################
 ## Summary Stats
 table_1 <- native_current_df %>%
     group_by(FC, HC) %>%
@@ -51,13 +58,11 @@ test_that("Table 1 Replicates", {
     )
 })
 
+
+############################################
+## OLS #####################################
+############################################
 # Table 2
-
-
-
-
-# Table 3
-
 ### Create lists of controls and base OLS formula
 base_ols_formula <- "logpcinc ~ FC + HC"
 reservation_controls <- c(
@@ -87,7 +92,10 @@ additional_iv_controls <- c(
     "wsilver_enviro"
 )
 
-
+#'  Function to create OLS formulae
+#'  
+#' @param base_formula y and main independent variables of interest.
+#' @param controls covariates we wish to control for, must be a string
 create_ols_formula <- function(base_formula = base_ols_formula,
                                controls) {
     model_formula <- paste0(base_formula, " + ", paste(controls, collapse = " + "))
@@ -175,6 +183,9 @@ etable(
     coefstat = "tstat"
 )
 
+############################################
+## FE ######################################
+############################################
 # Now panel B
 # Create FE formulae
 # We:
@@ -242,8 +253,11 @@ etable(
     digits = 3
 )
 
+############################################
+## FS/RF ###################################
+############################################
 ##### First Stage Check
-
+# Creating list of panel A first stage formulae
 first_stage_A_formulae <- map(
     list(
         "1",
@@ -258,7 +272,7 @@ first_stage_A_formulae <- map(
         controls = .x
     )
 )
-
+# Same for panel B
 first_stage_B_formulae <- map(
     list(
         "1",
@@ -274,7 +288,7 @@ first_stage_B_formulae <- map(
     )
 )
 
-
+# Fitting models
 first_stage_A_models <- first_stage_A_formulae %>%
     map(~feols(
         fml = .x,
@@ -287,7 +301,7 @@ first_stage_B_models <- first_stage_B_formulae %>%
         data = native_current_df,
         cluster=~eaid+statenumber
     ))
-
+# Testing replication
 test_that("Table IV  replicates ", {
     # read directly off table 4A
     dippel_fs_coefs <- c(
@@ -345,17 +359,18 @@ etable(
 )
 
 
-
-create_ols_formula(
-    base_formula = "FC ~ instrument_gold + instrument_silver + HC",
-    controls = 1)
-feols(
-    FC ~ instrument_gold + instrument_silver  + HC,
-    data = native_current_df,
-    cluster = ~eaid + statenumber
-)
+############################################
+## IV  #####################################
+############################################
 
 # IV time
+#' Create formulae for IV estimation
+#'
+#' @param controls covariates, strings.
+#' @param fixed_effects which FE to control for, string. Leave NULL if unused.
+#' @param instruments String of instruments to use
+#'
+#' @return IV formula
 create_iv_formula <- function(controls,
                               fixed_effects = NULL,
                               instruments) {
@@ -374,28 +389,31 @@ create_iv_formula <- function(controls,
     return(final_formula)
 }
 
-
-iv_formulae <- list(
+# List of model formulae
+iv_formulae_list <- list(
     "HC", # base formula + intercept
     c("HC", reservation_controls), 
     c("HC", reservation_controls, tribe_controls),
     c("HC", reservation_controls, tribe_controls, additional_reserve_controls),
     c("HC", reservation_controls, tribe_controls, additional_reserve_controls, "0 | statenumber"), # + state FE
     c("HC", reservation_controls, tribe_controls, additional_reserve_controls, additional_iv_controls, "0 | statenumber")
-) %>%
+) 
+
+# mapping string list objects into actual formulae objects in R
+iv_2_formulae <- iv_formulae_list %>%
     map(~create_iv_formula(
         controls = .x,
         instruments = "instrument_gold + instrument_silver"
     ))
 
-
-iv_2_models <- iv_formulae %>%
+# Fitting models
+iv_2_models <- iv_2_formulae %>%
     map(~feols(
         fml = .x,
         data = native_current_df,
         cluster = ~eaid + statenumber
     ))  
-iv_2_models
+
 
 # Testing IV replication
 test_that("Table V IV replications - two instruments", {
@@ -435,11 +453,78 @@ etable(
     iv_2_models,
     title = "IV - Dippel Table 5, Panel A",
     group = group_replacement,
-    drop = c("(Intercept)"),
+    drop = c("(Intercept)",
+             "Historical centralisation"),
     dict = dict_replacment,
     coefstat = "tstat",
     tex = TRUE,
     replace = TRUE,
     file = "data/output/table-5-iv-A.tex",
+    digits = 3
+)
+
+## Now we fit panel B for the one instrument case.
+## Aggregating into one variable
+native_current_df <- native_current_df %>%
+    mutate(instrument_precious = instrument_gold + instrument_silver)
+# Mapping string formulae into actual formulae with precious metal instrument
+iv_1_formulae <- iv_formulae_list %>%
+    map(~create_iv_formula(
+        controls = .x,
+        instruments = "instrument_precious"
+    ))
+
+
+iv_1_models <- iv_1_formulae %>%
+    map(~feols(
+        fml = .x,
+        data = native_current_df,
+        cluster = ~eaid + statenumber
+    ))
+
+
+
+test_that("Table V IV replications - one instruments", {
+    # read directly off table 2A
+    dippel_FC_iv_coefs <- c(
+        -0.406,
+        -0.371,
+        -0.397,
+        -0.350,
+        -0.339,
+        -0.443
+    )
+    # Estimated using our models
+    # following pipe just extracts
+    # coefs
+    rep_FC_iv_coefs <- c(
+        iv_2_models
+    ) %>%
+    map(tidy) %>%
+    map(filter, term == "fit_FC") %>%
+    map(select, estimate) %>%
+    map(pull) %>%
+    unlist()
+    # compare each element
+    map2(
+        rep_FC_iv_coefs,
+        dippel_FC_iv_coefs,
+        expect_equal,
+        tolerance = 0.001
+    )
+
+})
+
+etable(
+    iv_1_models,
+    title = "IV - Dippel Table 5, Panel B",
+    group = group_replacement,
+    drop = c("(Intercept)",
+             "Historical centralisation"),
+    dict = dict_replacment,
+    coefstat = "tstat",
+    tex = TRUE,
+    replace = TRUE,
+    file = "data/output/table-5-iv-B.tex",
     digits = 3
 )
