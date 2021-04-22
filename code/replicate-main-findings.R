@@ -58,7 +58,7 @@ test_that("Table 1 Replicates", {
 
 # Table 3
 
-
+### Create lists of controls and base OLS formula
 base_ols_formula <- "logpcinc ~ FC + HC"
 reservation_controls <- c(
     "logpcinc_co",
@@ -79,6 +79,14 @@ additional_reserve_controls <- c(
     "popadultshare",
     "casino"
 )
+
+additional_iv_controls <- c(
+    "homelandruggedness",
+    "removal",
+    "wgold_enviro",
+    "wsilver_enviro"
+)
+
 
 create_ols_formula <- function(base_formula = base_ols_formula,
                                controls) {
@@ -141,14 +149,17 @@ test_that("Table 2 OLS replications", {
 group_replacement <- list(
         "Reservation Controls" = reservation_controls,
         "Tribe Controls" = tribe_controls,
-        "Extra Reservation Controls" = additional_reserve_controls
+        "Extra Reservation Controls" = additional_reserve_controls,
+        "Extra IV Controls" = additional_iv_controls
 )
 dict_replacment <- c(
         eaid = "Tribe",
         statenumber = "State",
         logpcinc = "log(per capita income)",
         FC = "Forced coexistence",
-        HC = "Historical centralisation"
+        HC = "Historical centralisation",
+        instrument_silver = "Historical silver-mining",
+        instrument_gold = "Historical gold-mining"
 )
 # aggregating models and saving to tex file
 etable(
@@ -231,7 +242,118 @@ etable(
     digits = 3
 )
 
+##### First Stage Check
 
+first_stage_A_formulae <- map(
+    list(
+        "1",
+        reservation_controls,
+        c(reservation_controls, tribe_controls),
+        c(reservation_controls, tribe_controls, additional_reserve_controls),
+        c(reservation_controls, tribe_controls, additional_reserve_controls, "0 |statenumber"),
+        c(reservation_controls, tribe_controls, additional_reserve_controls, additional_iv_controls, "0 |statenumber")
+    ),
+    ~create_ols_formula(
+        base_formula = "FC ~ instrument_gold + instrument_silver + HC",
+        controls = .x
+    )
+)
+
+first_stage_B_formulae <- map(
+    list(
+        "1",
+        reservation_controls,
+        c(reservation_controls, tribe_controls),
+        c(reservation_controls, tribe_controls, additional_reserve_controls),
+        c(reservation_controls, tribe_controls, additional_reserve_controls, "0 |statenumber"),
+        c(reservation_controls, tribe_controls, additional_reserve_controls, additional_iv_controls, "0 |statenumber")
+    ),
+    ~create_ols_formula(
+        base_formula = "logpcinc ~ instrument_gold + instrument_silver + HC",
+        controls = .x
+    )
+)
+
+
+first_stage_A_models <- first_stage_A_formulae %>%
+    map(~feols(
+        fml = .x,
+        data = native_current_df,
+        cluster=~eaid + statenumber
+    ))
+first_stage_B_models <- first_stage_B_formulae %>%
+    map(~feols(
+        fml = .x,
+        data = native_current_df,
+        cluster=~eaid+statenumber
+    ))
+
+test_that("Table IV  replicates ", {
+    # read directly off table 4A
+    dippel_fs_coefs <- c(
+        0.018,
+        0.017,
+        0.015,
+        0.018,
+        0.023,
+        0.030
+    )
+    # Estimated using our models
+    # following pipe just extracts
+    # coefs
+    rep_fs_coefs <- c(
+        first_stage_A_models
+    ) %>%
+    map(tidy) %>%
+    map(filter, term == "instrument_gold") %>%
+    map(select, estimate) %>%
+    map(pull) %>%
+    unlist()
+    # compare each element
+    map2(
+        rep_fs_coefs,
+        dippel_fs_coefs,
+        expect_equal,
+        tolerance = 0.001
+    )
+
+})
+
+etable(
+    first_stage_A_models,
+    title = "First Stage - Dippel Table 4, Panel A",
+    group = group_replacement,
+    drop = c("(Intercept)"),
+    dict = dict_replacment,
+    coefstat = "tstat",
+    tex = TRUE,
+    replace = TRUE,
+    file = "data/output/table-4-A.tex",
+    digits = 3
+)
+etable(
+    first_stage_B_models,
+    title = "First Stage - Dippel Table 4, Panel B",
+    group = group_replacement,
+    drop = c("(Intercept)"),
+    dict = dict_replacment,
+    coefstat = "tstat",
+    tex = TRUE,
+    replace = TRUE,
+    file = "data/output/table-4-B.tex",
+    digits = 3
+)
+
+
+
+create_ols_formula(
+    base_formula = "FC ~ instrument_gold + instrument_silver + HC",
+    controls = 1)
+feols(
+    FC ~ instrument_gold + instrument_silver  + HC,
+    data = native_current_df,
+    cluster = ~eaid + statenumber
+)
 
 # IV time
 create_iv_formula <- function(controls,
@@ -253,12 +375,6 @@ create_iv_formula <- function(controls,
 }
 
 
-additional_iv_controls <- c(
-    "homelandruggedness",
-    "logdist",
-    "wgold_enviro",
-    "wsilver_enviro"
-)
 iv_formulae <- list(
     "HC", # base formula + intercept
     c("HC", reservation_controls), 
@@ -280,6 +396,40 @@ iv_2_models <- iv_formulae %>%
         cluster = ~eaid + statenumber
     ))  
 iv_2_models
+
+# Testing IV replication
+test_that("Table V IV replications - two instruments", {
+    # read directly off table 2A
+    dippel_FC_iv_coefs <- c(
+        -0.329,
+        -0.304,
+        -0.360,
+        -0.316,
+        -0.302,
+        -0.403
+    )
+    # Estimated using our models
+    # following pipe just extracts
+    # coefs
+    rep_FC_iv_coefs <- c(
+        iv_2_models
+    ) %>%
+    map(tidy) %>%
+    map(filter, term == "fit_FC") %>%
+    map(select, estimate) %>%
+    map(pull) %>%
+    unlist()
+    # compare each element
+    map2(
+        rep_FC_iv_coefs,
+        dippel_FC_iv_coefs,
+        expect_equal,
+        tolerance = 0.001
+    )
+
+})
+
+
 
 etable(
     iv_2_models,
