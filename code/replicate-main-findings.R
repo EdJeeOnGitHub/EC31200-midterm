@@ -150,6 +150,31 @@ test_that("Table 2 OLS replications", {
         expect_equal,
         tolerance = 0.001
     )
+    # now t stats
+
+    dippel_FC_ols_tstats <- c(
+        -3.662,
+        -4.090,
+        -7.192,
+        -4.913,
+        -5.072
+    )
+
+    rep_FC_tstats <- c(
+        ols_models
+    ) %>%
+    map(tidy) %>%
+    map(filter, term == "FC") %>%
+    map(select, statistic) %>%
+    map(pull) %>%
+    unlist()
+    # compare each element
+    map2(
+        rep_FC_tstats,
+        dippel_FC_ols_tstats,
+        expect_equal,
+        tolerance = 0.001
+    )
 
 })
 
@@ -460,7 +485,9 @@ etable(
     tex = TRUE,
     replace = TRUE,
     file = "data/output/table-5-iv-A.tex",
-    digits = 3
+    digits = 3,
+    digits.stats = 3,
+    fitstat = ~ . + ivf1 + ivwald1
 )
 
 ## Now we fit panel B for the one instrument case.
@@ -526,5 +553,7 @@ etable(
     tex = TRUE,
     replace = TRUE,
     file = "data/output/table-5-iv-B.tex",
-    digits = 3
+    digits = 3,
+    digits.stats = 3,
+    fitstat = ~ . + ivf1 + ivwald1
 )

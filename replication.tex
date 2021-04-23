@@ -1,5 +1,6 @@
 \documentclass{article}
 \usepackage{booktabs}
+\usepackage{array}
 \usepackage{amsmath}
 \author{Ed Jee} 
 \title{Replication: Dippel 2014}
@@ -7,13 +8,123 @@
 
 \begin{document}
 \maketitle
+
+My strategy is as follows:
+
+\begin{itemize}
+    \item Create controls/instruments etc.
+    \item Create model formulae programmatically.
+    \item Estimate models using the package `fixest'.
+    \item Compare replicated and original estimates programmatically using
+    R's `testthat' library, originally designed for unit tests.  
+\end{itemize}
+
+The controls are naturally grouped by the author as follows:
+
+\begin{table}[htbp]
+    \centering\begin{tabular}{| m{4cm} | m{5cm} | m{5cm} | }
+        \hline 
+    Set & Controls  & Variable Name\\ \hline\hline
+    Reservation Controls & log(local per capita  income),
+    log(local unemployment),
+    log(distance to nearest city),
+    log(ruggedness),
+    log(reservation area squared) &
+    \textit{
+        logpcinc\_co,
+        logunempl\_co,
+        logdist,
+        logruggedness,
+        logresarea\_sqkm
+    }  \\  \hline
+    Tribe Controls & subsistence patterns,
+    sedentariness,
+    wealth distinctions,
+    social complexity &
+    \textit{
+        ea\_v5,
+        ea\_v30,
+        ea\_v32,
+        ea\_v66
+    }\\ \hline
+    Extra Reservation Controls & log(population),
+    log(population)$^2$,
+    adult population share,
+    casino present &
+    \textit{
+        logpop,
+        logpopsq,
+        popadultshare,
+        casion
+    }\\ \hline
+    IV controls & ancestral ruggedness,
+    distance from ancestral lands,
+    local historical mining value (gold \& silver  ) 
+    & \textit{
+        homelandruggedness,
+        removal,
+        wgold\_enviro,
+        wsilver\_enviro
+    }\\ 
+    \hline
+    
+    \end{tabular}
+    \caption{Control List}
+    \label{controls}
+\end{table}
+
+\section{ OLS and Fixed Effects}
+First, I replicate the OLS and FE tables using the estimating equations:
+
+\begin{align*}
+    \log(p.c. \ income)_i &= \alpha + \beta_1 \text{Forced coexistence}_i   + \beta_2 \text{Historical centralisation}_i + X_i \Gamma  + \varepsilon_i
+\end{align*}
+ where $X_i$ corresponds to a matrix of covariates from Table \ref{controls}. The 
+ fixed effects model is identical except we control for tribe fixed effects, given by \textit{eaid} in the dataset. State fixed 
+ effects correspond to controlling for \textit{statenumber} which is not a 1:1 mapping with traditional states but a measure 
+ constructed by the author, ostensibly to overcome issues of ancestral homelands overlapping multiple modern states. Standard 
+ errors are clustered at the tribe and state level (\textit{eaid, statenumber}). Standard errors are clustered the conventional way using 
+ Eicker-Huber-White with any clustered degrees of freedom adjustments using Cameron-Gelbach-Miller.
 \input{data/output/table-2-ols.tex}
 
-\input{data/output/table-2-fe.tex}
 
-\input{data/output/table-4-A.tex}
-\input{data/output/table-4-B.tex}
-\input{data/output/table-5-iv-A.tex}
+
+
+% \input{data/output/table-4-A.tex}
+% \input{data/output/table-4-B.tex}
+
+
+
+\input{data/output/table-2-fe.tex}
+Both OLS and FE replicated estimates are identical to Dippel (2015) estimates 
+after rounding to three decimal places. $t$-statistics are similarly identical apart 
+from column 5 - this seems likely to be due to differences in counting degrees of freedom in clusters
+with few/singleton observations when using two way fixed effects as it only occurs once we control for state and tribe fixed effects. 
+Regardless, the estimates are still significant and there's no material difference in estimates.
+
+\section{Instrumental Variables}
+I estimate the following:
+
+\begin{align*}
+    \log(p.c. \ income)_i &= \alpha + \beta_1 \widehat{\text{Forced coexistence}}_i   + \beta_2 \text{Historical centralisation}_i + X_i \Gamma  + \varepsilon_i \\ \\
+\text{Forced coexistence}_i &= \pi_0 + \pi_1 \text{Historical gold-mining}_i + \pi_2 \text{Historical silver-mining} + X_i \Pi_3 + u_i
+\end{align*}
+
+Where historical gold and silver mining are our instruments for the endogenous variable "Forced coexistence". The "single instrument" specification preferred by the author instead sums across gold and silver mining to produce "Historical mining".
+Standard errors are clustered as described in the OLS and FE cases above.
+
+
+IV estimates replicate less cleanly: columns 1, 2, and 3 replicate perfectly; columns 4, 5, and 6 can be a little different, although at first glance not sizably different. The author 
+adds sets of controls in identical stages as in the OLS and FE estimation strategies and the number of observations is identical. Since columns 1-3 
+replicate perfectly and column 4 fails it seems likely there's a discrepancy between the additional reservation controls the author defines during OLS
+and IV. I omit Panel A in the interest of space as Dippel describes the single instrument specification as his preferred. Comparing the final column in the preferred specification 
+we see a difference of $-0.486 - - 0.443 = -0.043 \approx 10\%$ difference.
+
+% \input{data/output/table-5-iv-A.tex}
 \input{data/output/table-5-iv-B.tex}
+
+ The discrepancy in columns 4,5, and 6 continue in the first stage and reduced form breakdowns in Table 3 (omitted here for brevity). This is
+somewhat worrying since this leads to the gold mining instrument becoming insignificant in specifications 4 and 6 and a further reduction in an already small 
+first stage $F$-statistic. 
 
 \end{document}
