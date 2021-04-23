@@ -1,7 +1,9 @@
+
 \documentclass{article}
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{amsmath}
+\usepackage{graphicx}
 \author{Ed Jee} 
 \title{Midterm: Dippel 2014}
 
@@ -9,6 +11,7 @@
 \begin{document}
 \maketitle
 
+\section{Replication}
 My strategy is as follows:
 
 \begin{itemize}
@@ -73,7 +76,7 @@ The controls are naturally grouped by the author as follows:
     \label{controls}
 \end{table}
 
-\section{ OLS and Fixed Effects}
+\subsection{ OLS and Fixed Effects}
 First, I replicate the OLS and FE tables using the estimating equations:
 
 \begin{align*}
@@ -102,7 +105,7 @@ from column 5 - this seems likely to be due to differences in counting degrees o
 with few/singleton observations when using two way fixed effects as it only occurs once we control for state and tribe fixed effects. 
 Regardless, the estimates are still significant and there's no material difference in estimates.
 
-\section{Instrumental Variables}
+\subsection{Instrumental Variables}
 I estimate the following:
 
 \begin{align*}
@@ -127,4 +130,6 @@ we see a difference of $-0.486 - - 0.443 = -0.043 \approx 10\%$ difference.
 somewhat worrying since this leads to the gold mining instrument becoming insignificant in specifications 4 and 6 and a further reduction in an already small 
 first stage $F$-statistic. 
 
+\section{Extensions}
+\includegraphics[scale=0.5]{data/output/anderson-rubin-plot.png}
 \end{document}
