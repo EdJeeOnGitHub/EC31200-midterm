@@ -1,6 +1,7 @@
-
 \documentclass{article}
 \usepackage{booktabs}
+\usepackage{placeins}
+\usepackage{natbib}
 \usepackage{array}
 \usepackage{amsmath}
 \usepackage{graphicx}
@@ -87,8 +88,9 @@ First, I replicate the OLS and FE tables using the estimating equations:
  effects correspond to controlling for \textit{statenumber} which is not a 1:1 mapping with traditional states but a measure 
  constructed by the author, ostensibly to overcome issues of ancestral homelands overlapping multiple modern states. Standard 
  errors are clustered at the tribe and state level (\textit{eaid, statenumber}). Standard errors are clustered the conventional way using 
- Eicker-Huber-White with any clustered degrees of freedom adjustments using Cameron-Gelbach-Miller.
-\input{data/output/table-2-ols.tex}
+ Eicker-Huber-White with any clustered degrees of freedom adjustments using Cameron-Gelbach-Miller. I omit the OLS estimates here for brevity
+ and only display the FE estimates since they offer a more plausible selection on observables argument. 
+% \input{data/output/table-2-ols.tex}
 
 
 
@@ -132,16 +134,26 @@ first stage $F$-statistic.
 
 \section{Extensions}
 \subsection*{Anderson-Rubin}
+
+First, I estimate Anderson-Rubin weak IV robust confidence intervals since the first stage $F$-stats reported in the author's preferred 
+specification are still somewhat low with the majority of columns 1-5 in Table 3 (Dippel Table 5) barely above the common heuristic of 10. Even
+without conditioning on $F$-stat pre-tests computing weak IV robust confidence intervals is sensible.
+
 \begin{figure}[htbp]
     \centering
     \includegraphics[scale=0.5]{data/output/anderson-rubin-plot.png}
     \caption{Anderson Rubin vs Original Confidence Intervals}
     \label{AR}
 \end{figure}
-
+In Figure \ref{AR} I plot AR confidence intervals alongside the author's conventional clustered standard error confidence intervals using the Dippel Table 5, Panel B specification (IV - one instrument).
+Clearly, this leads to a large increase in the CI width and all but the final estimate are now insignificant from 0. We should doubt somewhat the author's primary conclusion as the results
+do not appear to be robust to weak instruments.
 \subsection*{Counterfactual Densities}
+In order to explore potential outcome densities using the results of \cite{imbens-rubin}
+I discretise the instrument and treatment to create binary variables where each variable is set to $1$ if the realisation is above its
+state median - using means instead of medians leads to only $\approx 3$ compliers due to the fat tailed nature of the data, as opposed to $\approx 35$ using medians.
 
-discretise using medians
+
 \begin{figure}[htbp]
     \centering
     \includegraphics[scale=0.5]{data/output/density-plot.png}
@@ -149,11 +161,99 @@ discretise using medians
     \label{dens}
 \end{figure}
 
-\subsection*{AMIP}
+
+The density for $Y_1$ is clearly shifted to the left of the potential outcome density $Y_0$ which makes sense given the negative effect 
+of forced coexistence estimated by the author\footnote{Although given he uses the instrument in its continuous, not binary form, these LATEs aren't directly comparable}. Interestingly, the $Y_1$ density is almost uniformly to the left of the $Y_0$ density i.e. 
+every quantile of the distribution performs worse under treatment although we cannot make any statements about individuals without 
+further assumptions such as rank preservation. The estimated densities for always- and never-takers are somewhat different to the compliers 
+and it seems likely we can't extrapolate the LATE estimate to other sub-populations.
+\subsection*{Additional Robustness Checks}
+
+Since the paper's main finding doesn't seem to be robust to weak instruments I explore additional robustness checks using 
+\cite{amip}'s Automatic Finite-Sample Robustness Metric. This identifies which in-sample data points have maximal influence on 
+ metrics of interest such as the significance or sign of a result. Whilst perfectly identifying these points is computationally infeasible
+since it involves iterating through the power set of all data points and deleting $k = 1, 2, 3, ...$ data points the author's calculate approximate 
+maximal influence in one step using a Taylor expansion.
+
+
+
+\input{data/output/amip.tex}
+
+The robustness checks again suggest we should be cautious interpretting the author's primary result - deleting only 7 data points leads to insignificance and 
+removing 19 completely reverses the sign of the estimate.
 
 \subsection*{Spatial Noise}
+Finally, I investigate whether the author's estimates could merely be the result of fitting spatial noise. \cite{persistence} shows that many modern 
+papers in economics exhibit unusually large $t$-statistics due to regressing modern outcomes on historical characteristics without adequately accounting for 
+spatial noise. 
+
+Kelly suggests two solutions\footnote{He notes that commonly used Conley standard errors often use a bandwidth magnitudes too small to account for reasonable levels of spatial correlation.}: Reporting Moran's I statistic, a two dimensional analog of the Durbin-Watson statistic,
+ and  generating spatial noise to replace the dependent variable and treatment variable in turn followed by measuring how much variation in outcomes can simply be explained by spatially correlated noise.
+
+\subsubsection*{Moran's I}
+Unfortunately, whilst the dataset provided contains a `geoid2' corresponding to Census Bureau identifiers there's not enough information in the paper to map these 
+into locations. Instead, I use the OpenStreetMap API \citep{OpenStreetMap} to identify reservation locations based off a string column containing reservation names. This leads 
+to 156 matches and  26 unidentified locations. Using the remaining data I estimate Moran's I for our dependent variable using an MC simulation of 100,000 draws \footnote{Calculating Moran's analytically can be sensitive to irreguarly distributed polygons - i.e. US state/reservation boundaries.}
+with  results displayed in Figure \ref{moran}.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[scale=0.5]{data/output/moran-plot.png}
+    \caption{Moran's I}
+    \label{moran}
+\end{figure}
+
+We soundly reject the null hypothesis of no spatial autocorrelation with the realised draw (the dotted line) far to the right of 
+the generated draws under the null (in pink). The $p$-value associated with the test is $0.00009$.
 
 
-\includegraphics[scale=0.5]{data/output/moran-plot.png}
+\subsubsection*{Spatial Noise Simulations}
 
+To create spatial noise I generate a Gaussian process with covariance kernel:
+
+\begin{align*}
+    \Sigma(x_i, x_j) &= \exp(- || x_i - x_j ||^2) \\
+    &= \Sigma_D
+\end{align*}
+i.e. the inverse of the squared Euclidean distance between two reservations. I sample $1000 \times 156$ draws from the corresponding 
+Gaussian process:
+\begin{align*}
+    Y \sim MVN(\mathbf{0}_{156}, \Sigma_D)
+\end{align*}
+
+
+Geostatistics often uses  \textit{kriging} to interpolate between points - this is identical to using a Gaussian process and motivates 
+my use of the Gaussian here. Since the covariance kernel is a function of the proximity of points any random draws will naturally exhibit spatial 
+correlation and the exponential ensures correlation dies off as proximity falls. An example draw is shown in Figure \ref{noise} where lighter, larger 
+points correspond to higher simulated values.
+
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[scale=0.5]{data/output/noise-plot.png}
+    \caption{Spatially Correlated Noise}
+    \label{noise}
+\end{figure}
+
+Finally, I estimate the author's preferred IV specification using noise as the outcome variable and record the $p$-values. Since any noise 
+was generated randomly with respect to the instrument/endogenous variable the only channel through which correlation can occur is through spatial 
+autocorrelation \textit{despite the fact this spatial noise was generated without using any information in the covariates, dependence purely arises through 
+the distance metric in the covariance kernel}. That is, if the treatment/instrument is spatially autocorrelated we can generate seemingly significant results 
+even when fitting noise. Below is the quantile-quantile plot of the $p$-values - under the null hypothesis i.e. $\beta_{2SLS} = 0$ we'd expect to see $p$-values 
+distributed uniformly and follow the 45 degree line.   
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[scale=0.5]{data/output/qq-plot.png}
+    \caption{Simulated $p$-value QQ plot}
+    \label{qq}
+\end{figure}
+
+Figure \ref{qq} clearly shows the simulated $p$-values depart substantially from uniformity and it seems likely that Dippel 2014's results are at least 
+in part driven by fitting spatial noise.
+
+
+
+\FloatBarrier
+\bibliographystyle{abbrvnat}
+\bibliography{bib}
 \end{document}

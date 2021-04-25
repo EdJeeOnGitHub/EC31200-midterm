@@ -317,7 +317,24 @@ influence_dfs <- SortAndAccumulate(grad_df)
 
 change_df <- GetRegressionTargetChange(influence_dfs, "num_removed") %>%
     na.omit() 
-change_df
+change_df %>%
+    select(-target, -estimate_col) %>%
+    mutate(variable = "Forced coexistence") %>%
+    select(variable, everything()) %>%
+    rename(`Number Removed` = num_removed,
+            Variable = variable,
+            Direction = direction) %>%
+    knitr::kable(
+        format = "latex",
+        booktabs = TRUE, 
+        caption = "Approximate Maximal Influence Checks") %>%
+    kableExtra::kable_styling() %>%
+    as.character() %>%
+    writeLines("data/output/amip.tex")
+native_df %>%
+    select(geo_id2) %>%
+    head() %>%
+    str()
 
 ######### Running Spatial Noise #############
 run_geocode <- FALSE
@@ -364,7 +381,7 @@ moran_plot <- moran_df %>%
     geom_vline(xintercept = moran_sim$statistic,
                linetype = "longdash") +
     theme_bw() +
-    labs(title = "Distribution of Permuted Test Statistics and Realised Draw",
+    labs(title = "Distribution of Test Statistics and Realised Draw",
          x = "Estimate")
 moran_plot
 ggsave(plot = moran_plot,
@@ -381,13 +398,27 @@ dist_matrix <- clean_geo_native_df %>%
     select(longitude, latitude) %>% 
     distance()
 eps <- sqrt(.Machine$double.eps)
-Sigma <- exp(-D) + diag(eps, nrow(clean_geo_native_df))
+Sigma <- exp(-dist_matrix) + diag(eps, nrow(clean_geo_native_df))
 sim_y_draws <- mvtnorm::rmvnorm(1000, sigma = Sigma) %>%
     t() %>%
     as_tibble()
 
 
-
+example_sim <- bind_cols(
+    clean_geo_native_df,
+    sim_y_draws[, 1]
+) 
+noise_plot <- example_sim %>%
+    ggplot(
+           aes(longitude, latitude)) +
+  borders("state") + geom_point(aes(color = V1, size = V1)) +
+  theme_void() +
+  guides(color = "none", size = "none") 
+ggsave(
+    plot = noise_plot,
+    filename = "data/output/noise-plot.png",
+    width = 8,
+    height = 6)
 fit_sim <- function(y_draws){
 
     sim_data <- bind_cols(
