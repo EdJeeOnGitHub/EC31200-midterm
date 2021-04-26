@@ -1,10 +1,16 @@
-\documentclass{article}
+\documentclass[12pt]{article}
 \usepackage{booktabs}
 \usepackage{placeins}
 \usepackage{natbib}
 \usepackage{array}
 \usepackage{amsmath}
 \usepackage{graphicx}
+\usepackage{titling}
+\usepackage{setspace} 
+\setlength{\droptitle}{-10em}   % This is your set screw
+\usepackage{geometry}
+\addtolength{\topmargin}{-0.3in}
+\addtolength{\textheight}{1.75in}
 \author{Ed Jee} 
 \title{Midterm: Dippel 2014}
 
@@ -12,70 +18,158 @@
 \begin{document}
 \maketitle
 
-\section{Replication}
-My strategy is as follows:
 
+\section{Referee Report}
+
+\cite{dippel}'s primary contribution is to estimate the effect of forced coexistence - whereby autonomous sub-tribal units share a 
+reservation - on outcomes such as contemporary income in the context of Native American reservations. This question is of central interest to economists because economic underperformance
+today is often attributed to "cleavages" where multiple groups reside within borders that do not reflect historical boundaries. Unfortunately, 
+forced coexistence is often endogenous, the author cites examples of tribes with strong reverence/preference for tradition/culture as more likely 
+to lobby for a homogeneous reservation. The paper uses a range of data sources from the US Census Bureau, anthropological sources, and historical 
+sources describing the sites of mining interest and mining value - in total the author reports 182 observations. The author's preferred specification suggests forced coexistence leads to a $\approx 30\%$ fall in contemporary 
+incomes, a substantial negative effect.
+
+\subsection{Selection On Observables}
+To overcome concerns of endogeneity the author uses a selection on observables approach followed by IV. In the interest of brevity I'll focus 
+on the fixed effects selection on observables strategy over the OLS estimates, Table 2 Panel B, since the removal of unobserved tribe level heterogeneity 
+makes causal interpretation of forced coexistence more plausible.  The author regresses\footnote{The author includes historical centralisation ($HC_i$) as an additional 
+control since it's of interest to the literature - I ignore it throughout as it's not a primary estimand of the paper.}:
+\begin{align*}
+    \log(\text{per capita income})_{ie} &= \alpha_e + \gamma_s + \beta_1 FC_{ie} + \beta_2 HC_{ie}+ \beta_3 \text{Res Controls}_{ie} + \beta_4 \text{Tribe Controls}_{ie}  \\
+    &+ \beta_5 \text{Extra Res Controls}_{ie} + u_{ie} 
+\end{align*}
+  
+where $\alpha_e, \gamma_s$ are tribe and state fixed effects respectively. We index reservation $i$ and ethnicity $e$, a catchall term for sub-tribal units.
+ The interpretation of $\beta_1$ is only causal if we believe $FC_{ie}$ is orthogonal to the error term $u_{ie}$. As the author reports, any selection into 
+ $FC$ based off unobservable sub-tribal characteristics will lead to biased estimates and citing such an anecdotal example, motivates the use of an instrument. The author's 
+ assessment of the limited value of the FE strategy seems reasonable and after a brief discussion of bad controls we turn to IV.
+
+\subsubsection*{Bad Controls}
+
+A large number of the author's controls are determined after treatment - it seems likely that measures such as log(population), population adult share, and local unemployment are all channels through which forced coexistence can influence contemporary reservation life. It's hard to believe that forced coexistence only influences 
+per capita income and has 0 effect on other channels such as unemployment, population demographics etc. The paper should at least caveat this in the selection on observables section 
+before discussing IV I believe.
+
+\subsection{Instrumental Variables}
+The paper instruments forced coexistence with the value of historical gold and silver mining as separate instruments, and in the preferred specification uses historical mining defined 
+as the sum of the two. The author argues the federal government was incentivised to create smaller/fewer reservations, forcing bands to coexist, in areas with higher land value. Since Native 
+Americans didn't possess a mining industry, conditional on land characteristics, the presence of valuable minerals increased the attractiveness of land to the federal government but had no
+direct impact on Native American value appraisals. Therefore, a higher historical mining value induced the federal government to create fewer reservations and 'pack' multiple autonomous bands
+into a single reservation leading to forced coexistence. The author clearly emphasises the threat of direct instrument effects, the value of historical mining  influencing incomes today
+and only uses mining value from mines located in ancestral homelands that are outside the border of modern reservations. Whilst this is a good first step ensuring instrument validity, I shall argue 
+below that instrument validity, alongside instrument relevance, are still a concern.
+
+\subsubsection*{Instrument Relevance}
+
+Firstly, there is no reason not to report Anderon-Rubin confidence intervals - especially when the first stage $F$-stat is so low. Furthermore, the steps taken in my replication 
+(see Section 2) suggest that the gold instrument isn't even significant in contrast to the paper's reported results. Given the presence of weak instruments; and the fact there's only 182 observations it seems prudent to report weak instrument robust CIs. 
+
+
+\subsubsection*{Instrument Validity and Monotonicity}
+The paper is careful to construct the instrument using mines outside contemporary reservation borders however I'd argue this still doesn't fully address instrument validity concerns.
+
+Infrastructure built by the federal/state governments is likely to be driven, at least in part, by a desire to exploit natural resources. Since railroads, roads, and 
+cities influence socioeconomic factors for hundreds of miles in their vicinity I'd argue that even after discarding mines within reservation borders and controlling 
+for local mining, provided reservations aren't 1000s of miles from ancestral homelands (which doesn't appear to be the case), instrument validity is still a concern.  
+
+Finally, whilst Native Americans weren't able to extract minerals themselves this doesn't mean discovery of minerals didn't influence their appraisal of land value when 
+bargaining with the federal government. If larger tribes were able to threaten violence more effectively than smaller tribes, the discovery of minerals could increase their bargaining power and therefore leverage larger reservations and a reduction in forced coexistence - in this case the instrument would have a different sign in the first stage for large vs small tribes and violate instrument monotonicity.
+
+
+\subsubsection*{Instrument Construction}
+
+The author's preferred specification sums across both gold and silver mining to produce historical mining, this is partially motivated by concerns of week instruments and 
+the author justifies his decision using the increase in the first stage $F$-stat. I believe this is a mistake: the two instruments surely contain more information than 
+destroying instrument granularity  by pooling information into one instrument - there are many solutions to weak instruments, this is not one of them. Furthermore, the first stage $F$-stat increases due to a mechanical reduction in the degrees of freedom, moving from two to one estimands, that doesn't reflect the true statistical uncertainty of estimated quantities. This mistake is more common in the examiner design literature where leave-out-means use a degree of freedom of 1, and not the number of examiners\footnote{See an unpublished note by \cite{hull} for more details.} when computing weak instrument heuristics.
+
+
+If the author truly wishes to pool weak instruments he should consider implementing \cite{reqml}'s Random Effects Quasi-Maximum Likelihood estimator which uses data-driven random effects/hierarchical shrinkage to overcome weak instrument issues through pooling. Alternatively, if the author truly believes historical mining 
+is his chosen instrument, he should motivate it with theory/historical evidence and not an appeal to poor statistics.
+
+
+\subsubsection*{Spatial Noise}
+
+
+Finally, the author follows a strong tradition in economics of regressing contemporary outcomes on historical variables without adjusting for spatial correlation. \cite{persistence} shows that this often leads to inflated $t$-statistics far beyond what seems reasonable. Given the impressive ability of this paper to produce significant results 
+with only 182 observations it seems particularly prudent to follow Kelly's advice:
 \begin{itemize}
-    \item Create controls/instruments etc.
-    \item Create model formulae programmatically.
-    \item Estimate models using the package `fixest'.
-    \item Compare replicated and original estimates programmatically using
-    R's `testthat' library, originally designed for unit tests.  
+    \item Report Moran's I statistic for spatial autocorrelation.
+    \item Generate spatially correlated noise and measure what fraction of the estimated response is just correlation driven by spatial noise.
 \end{itemize}
 
-The controls are naturally grouped by the author as follows:
 
-\begin{table}[htbp]
-    \centering\begin{tabular}{| m{4cm} | m{5cm} | m{5cm} | }
-        \hline 
-    Set & Controls  & Variable Name\\ \hline\hline
-    Reservation Controls & log(local per capita  income),
-    log(local unemployment),
-    log(distance to nearest city),
-    log(ruggedness),
-    log(reservation area squared) &
-    \textit{
-        logpcinc\_co,
-        logunempl\_co,
-        logdist,
-        logruggedness,
-        logresarea\_sqkm
-    }  \\  \hline
-    Tribe Controls & subsistence patterns,
-    sedentariness,
-    wealth distinctions,
-    social complexity &
-    \textit{
-        ea\_v5,
-        ea\_v30,
-        ea\_v32,
-        ea\_v66
-    }\\ \hline
-    Extra Reservation Controls & log(population),
-    log(population)$^2$,
-    adult population share,
-    casino present &
-    \textit{
-        logpop,
-        logpopsq,
-        popadultshare,
-        casion
-    }\\ \hline
-    IV controls & ancestral ruggedness,
-    distance from ancestral lands,
-    local historical mining value (gold \& silver  ) 
-    & \textit{
-        homelandruggedness,
-        removal,
-        wgold\_enviro,
-        wsilver\_enviro
-    }\\ 
-    \hline
+Additionally, I'd recommend reporting Conley standard errors with a bandwith as suggested by Kelly. In Section 3 I implement Kelly's advice and show that 
+it's plausible the paper's results are in large part driven by spatial autocorrelation.
+
+
+\subsection{Conclusion}
+Given the concerns outlined above regarding instrument weakness, spatial noise, validity, and monotonicity it seems unlikely the author's results genuinely reflect researcher uncertainty 
+about the parameter of interest - the effect of forced coexistence on  reservation incomes, leaving aside any discussion of LATE and its interpretation here. I believe it'd be irresponsible to take the proposed estimates of 
+-$30\%$ seriously without fixing the problems listed in this report.
+\section{Replication} 
+% My strategy is as follows:
+
+% \begin{itemize}
+%     \item Create controls/instruments etc.
+%     \item Create model formulae programmatically.
+%     \item Estimate models using the package `fixest'.
+%     \item Compare replicated and original estimates programmatically using
+%     R's `testthat' library, originally designed for unit tests.  
+% \end{itemize}
+
+% The controls are naturally grouped by the author as follows:
+
+% \begin{table}[htbp]
+%     \centering\begin{tabular}{| m{4cm} | m{5cm} | m{5cm} | }
+%         \hline 
+%     Set & Controls  & Variable Name\\ \hline\hline
+%     Reservation Controls & log(local per capita  income),
+%     log(local unemployment),
+%     log(distance to nearest city),
+%     log(ruggedness),
+%     log(reservation area squared) &
+%     \textit{
+%         logpcinc\_co,
+%         logunempl\_co,
+%         logdist,
+%         logruggedness,
+%         logresarea\_sqkm
+%     }  \\  \hline
+%     Tribe Controls & subsistence patterns,
+%     sedentariness,
+%     wealth distinctions,
+%     social complexity &
+%     \textit{
+%         ea\_v5,
+%         ea\_v30,
+%         ea\_v32,
+%         ea\_v66
+%     }\\ \hline
+%     Extra Reservation Controls & log(population),
+%     log(population)$^2$,
+%     adult population share,
+%     casino present &
+%     \textit{
+%         logpop,
+%         logpopsq,
+%         popadultshare,
+%         casion
+%     }\\ \hline
+%     IV controls & ancestral ruggedness,
+%     distance from ancestral lands,
+%     local historical mining value (gold \& silver  ) 
+%     & \textit{
+%         homelandruggedness,
+%         removal,
+%         wgold\_enviro,
+%         wsilver\_enviro
+%     }\\ 
+%     \hline
     
-    \end{tabular}
-    \caption{Control List}
-    \label{controls}
-\end{table}
+%     \end{tabular}
+%     \caption{Control List}
+%     \label{controls}
+% \end{table}
 
 \subsection{ OLS and Fixed Effects}
 First, I replicate the OLS and FE tables using the estimating equations:
@@ -83,12 +177,12 @@ First, I replicate the OLS and FE tables using the estimating equations:
 \begin{align*}
     \log(p.c. \ income)_i &= \alpha + \beta_1 \text{Forced coexistence}_i   + \beta_2 \text{Historical centralisation}_i + X_i \Gamma  + \varepsilon_i
 \end{align*}
- where $X_i$ corresponds to a matrix of covariates from Table \ref{controls}. The 
+ where $X_i$ corresponds to a matrix of covariates described by the author. The 
  fixed effects model is identical except we control for tribe fixed effects, given by \textit{eaid} in the dataset. State fixed 
  effects correspond to controlling for \textit{statenumber} which is not a 1:1 mapping with traditional states but a measure 
  constructed by the author, ostensibly to overcome issues of ancestral homelands overlapping multiple modern states. Standard 
  errors are clustered at the tribe and state level (\textit{eaid, statenumber}). Standard errors are clustered the conventional way using 
- Eicker-Huber-White with any clustered degrees of freedom adjustments using Cameron-Gelbach-Miller. I omit the OLS estimates here for brevity
+ Eicker-Huber-White with any clustered degrees of freedom adjustments using Cameron-Gelbach-Miller \citep{cluster}. I omit the OLS estimates here for brevity
  and only display the FE estimates since they offer a more plausible selection on observables argument. 
 % \input{data/output/table-2-ols.tex}
 
@@ -99,8 +193,9 @@ First, I replicate the OLS and FE tables using the estimating equations:
 % \input{data/output/table-4-B.tex}
 
 
-
 \input{data/output/table-2-fe.tex}
+
+
 Both OLS and FE replicated estimates are identical to Dippel (2015) estimates 
 after rounding to three decimal places. $t$-statistics are similarly identical apart 
 from column 5 - this seems likely to be due to differences in counting degrees of freedom in clusters
@@ -131,9 +226,9 @@ we see a difference of $-0.486 - - 0.443 = -0.043 \approx 10\%$ difference.
  The discrepancy in columns 4,5, and 6 continue in the first stage and reduced form breakdowns in Table 3 (omitted here for brevity). This is
 somewhat worrying since this leads to the gold mining instrument becoming insignificant in specifications 4 and 6 and a further reduction in an already small 
 first stage $F$-statistic. 
-
+% \FloatBarrier
 \section{Extensions}
-\subsection*{Anderson-Rubin}
+\subsection{Anderson-Rubin}
 
 First, I estimate Anderson-Rubin weak IV robust confidence intervals since the first stage $F$-stats reported in the author's preferred 
 specification are still somewhat low with the majority of columns 1-5 in Table 3 (Dippel Table 5) barely above the common heuristic of 10. Even
@@ -148,7 +243,7 @@ without conditioning on $F$-stat pre-tests computing weak IV robust confidence i
 In Figure \ref{AR} I plot AR confidence intervals alongside the author's conventional clustered standard error confidence intervals using the Dippel Table 5, Panel B specification (IV - one instrument).
 Clearly, this leads to a large increase in the CI width and all but the final estimate are now insignificant from 0. We should doubt somewhat the author's primary conclusion as the results
 do not appear to be robust to weak instruments.
-\subsection*{Counterfactual Densities}
+\subsection{Counterfactual Densities}
 In order to explore potential outcome densities using the results of \cite{imbens-rubin}
 I discretise the instrument and treatment to create binary variables where each variable is set to $1$ if the realisation is above its
 state median - using means instead of medians leads to only $\approx 3$ compliers due to the fat tailed nature of the data, as opposed to $\approx 35$ using medians.
@@ -167,7 +262,7 @@ of forced coexistence estimated by the author\footnote{Although given he uses th
 every quantile of the distribution performs worse under treatment although we cannot make any statements about individuals without 
 further assumptions such as rank preservation. The estimated densities for always- and never-takers are somewhat different to the compliers 
 and it seems likely we can't extrapolate the LATE estimate to other sub-populations.
-\subsection*{Additional Robustness Checks}
+\subsection{Additional Robustness Checks}
 
 Since the paper's main finding doesn't seem to be robust to weak instruments I explore additional robustness checks using 
 \cite{amip}'s Automatic Finite-Sample Robustness Metric. This identifies which in-sample data points have maximal influence on 
@@ -182,7 +277,7 @@ maximal influence in one step using a Taylor expansion.
 The robustness checks again suggest we should be cautious interpretting the author's primary result - deleting only 7 data points leads to insignificance and 
 removing 19 completely reverses the sign of the estimate.
 
-\subsection*{Spatial Noise}
+\subsection{Spatial Noise}
 Finally, I investigate whether the author's estimates could merely be the result of fitting spatial noise. \cite{persistence} shows that many modern 
 papers in economics exhibit unusually large $t$-statistics due to regressing modern outcomes on historical characteristics without adequately accounting for 
 spatial noise. 
