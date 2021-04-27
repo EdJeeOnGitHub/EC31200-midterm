@@ -11,12 +11,13 @@
 \usepackage{geometry}
 \addtolength{\topmargin}{-0.3in}
 \addtolength{\textheight}{1.75in}
+\doublespacing
 \author{Ed Jee} 
 \title{Midterm: Dippel 2014}
 
 
 \begin{document}
-\maketitle
+% \maketitle
 
 
 \section{Referee Report}
@@ -91,11 +92,8 @@ is his chosen instrument, he should motivate it with theory/historical evidence 
 
 
 Finally, the author follows a strong tradition in economics of regressing contemporary outcomes on historical variables without adjusting for spatial correlation. \cite{persistence} shows that this often leads to inflated $t$-statistics far beyond what seems reasonable. Given the impressive ability of this paper to produce significant results 
-with only 182 observations it seems particularly prudent to follow Kelly's advice:
-\begin{itemize}
-    \item Report Moran's I statistic for spatial autocorrelation.
-    \item Generate spatially correlated noise and measure what fraction of the estimated response is just correlation driven by spatial noise.
-\end{itemize}
+with only 182 observations it seems particularly prudent to follow Kelly's advice: Report Moran's I statistic for spatial autocorrelation, and generate spatially correlated noise and measure what fraction of the estimated response is just correlation driven by spatial noise.
+
 
 
 Additionally, I'd recommend reporting Conley standard errors with a bandwith as suggested by Kelly. In Section 3 I implement Kelly's advice and show that 
@@ -173,17 +171,13 @@ about the parameter of interest - the effect of forced coexistence on  reservati
 
 \subsection{ OLS and Fixed Effects}
 First, I replicate the OLS and FE tables using the estimating equations:
-
 \begin{align*}
     \log(p.c. \ income)_i &= \alpha + \beta_1 \text{Forced coexistence}_i   + \beta_2 \text{Historical centralisation}_i + X_i \Gamma  + \varepsilon_i
 \end{align*}
  where $X_i$ corresponds to a matrix of covariates described by the author. The 
- fixed effects model is identical except we control for tribe fixed effects, given by \textit{eaid} in the dataset. State fixed 
- effects correspond to controlling for \textit{statenumber} which is not a 1:1 mapping with traditional states but a measure 
- constructed by the author, ostensibly to overcome issues of ancestral homelands overlapping multiple modern states. Standard 
- errors are clustered at the tribe and state level (\textit{eaid, statenumber}). Standard errors are clustered the conventional way using 
- Eicker-Huber-White with any clustered degrees of freedom adjustments using Cameron-Gelbach-Miller \citep{cluster}. I omit the OLS estimates here for brevity
- and only display the FE estimates since they offer a more plausible selection on observables argument. 
+ fixed effects model is identical except we control for tribe (and sometimes state) fixed effects. Standard 
+ errors are clustered at the tribe and state level. I omit the OLS estimates here for brevity
+ and only display the FE estimates. 
 % \input{data/output/table-2-ols.tex}
 
 
@@ -198,21 +192,15 @@ First, I replicate the OLS and FE tables using the estimating equations:
 
 Both OLS and FE replicated estimates are identical to Dippel (2015) estimates 
 after rounding to three decimal places. $t$-statistics are similarly identical apart 
-from column 5 - this seems likely to be due to differences in counting degrees of freedom in clusters
-with few/singleton observations when using two way fixed effects as it only occurs once we control for state and tribe fixed effects. 
-Regardless, the estimates are still significant and there's no material difference in estimates.
+from column 5. Regardless, the estimates are still significant and there's no material difference in estimates.
 
 \subsection{Instrumental Variables}
 I estimate the following:
-
 \begin{align*}
     \log(p.c. \ income)_i &= \alpha + \beta_1 \widehat{\text{Forced coexistence}}_i   + \beta_2 \text{Historical centralisation}_i + X_i \Gamma  + \varepsilon_i \\ \\
 \text{Forced coexistence}_i &= \pi_0 + \pi_1 \text{Historical gold-mining}_i + \pi_2 \text{Historical silver-mining} + X_i \Pi_3 + u_i
 \end{align*}
-
-Where historical gold and silver mining are our instruments for the endogenous variable "Forced coexistence". The "single instrument" specification preferred by the author instead sums across gold and silver mining to produce "Historical mining".
-Standard errors are clustered as described in the OLS and FE cases above.
-
+Where historical gold and silver mining are our instruments for the endogenous variable "Forced coexistence".
 
 IV estimates replicate less cleanly: columns 1, 2, and 3 replicate perfectly; columns 4, 5, and 6 can be a little different, although at first glance not sizably different. The author 
 adds sets of controls in identical stages as in the OLS and FE estimation strategies and the number of observations is identical. Since columns 1-3 
@@ -223,9 +211,9 @@ we see a difference of $-0.486 - - 0.443 = -0.043 \approx 10\%$ difference.
 % \input{data/output/table-5-iv-A.tex}
 \input{data/output/table-5-iv-B.tex}
 
- The discrepancy in columns 4,5, and 6 continue in the first stage and reduced form breakdowns in Table 3 (omitted here for brevity). This is
-somewhat worrying since this leads to the gold mining instrument becoming insignificant in specifications 4 and 6 and a further reduction in an already small 
-first stage $F$-statistic. 
+%  The discrepancy in columns 4,5, and 6 continue in the first stage and reduced form breakdowns in Table 3 (omitted here for brevity). This is
+% somewhat worrying since this leads to the gold mining instrument becoming insignificant in specifications 4 and 6 and a further reduction in an already small 
+% first stage $F$-statistic. 
 % \FloatBarrier
 \section{Extensions}
 \subsection{Anderson-Rubin}
@@ -236,7 +224,7 @@ without conditioning on $F$-stat pre-tests computing weak IV robust confidence i
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[scale=0.5]{data/output/anderson-rubin-plot.png}
+    \includegraphics[scale=0.3]{data/output/anderson-rubin-plot.png}
     \caption{Anderson Rubin vs Original Confidence Intervals}
     \label{AR}
 \end{figure}
@@ -251,7 +239,7 @@ state median - using means instead of medians leads to only $\approx 3$ complier
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[scale=0.5]{data/output/density-plot.png}
+    \includegraphics[scale=0.3]{data/output/density-plot.png}
     \caption{Density Plots}
     \label{dens}
 \end{figure}
@@ -262,52 +250,49 @@ of forced coexistence estimated by the author\footnote{Although given he uses th
 every quantile of the distribution performs worse under treatment although we cannot make any statements about individuals without 
 further assumptions such as rank preservation. The estimated densities for always- and never-takers are somewhat different to the compliers 
 and it seems likely we can't extrapolate the LATE estimate to other sub-populations.
-\subsection{Additional Robustness Checks}
+% \subsection{Additional Robustness Checks}
 
-Since the paper's main finding doesn't seem to be robust to weak instruments I explore additional robustness checks using 
-\cite{amip}'s Automatic Finite-Sample Robustness Metric. This identifies which in-sample data points have maximal influence on 
- metrics of interest such as the significance or sign of a result. Whilst perfectly identifying these points is computationally infeasible
-since it involves iterating through the power set of all data points and deleting $k = 1, 2, 3, ...$ data points the author's calculate approximate 
-maximal influence in one step using a Taylor expansion.
+% Since the paper's main finding doesn't seem to be robust to weak instruments I explore additional robustness checks using 
+% \cite{amip}'s Automatic Finite-Sample Robustness Metric. This identifies which in-sample data points have maximal influence on 
+%  metrics of interest such as the significance or sign of a result. Whilst perfectly identifying these points is computationally infeasible
+% since it involves iterating through the power set of all data points and deleting $k = 1, 2, 3, ...$ data points the author's calculate approximate 
+% maximal influence in one step using a Taylor expansion.
 
 
 
-\input{data/output/amip.tex}
+% \input{data/output/amip.tex}
 
-The robustness checks again suggest we should be cautious interpretting the author's primary result - deleting only 7 data points leads to insignificance and 
-removing 19 completely reverses the sign of the estimate.
+% The robustness checks again suggest we should be cautious interpretting the author's primary result - deleting only 7 data points leads to insignificance and 
+% removing 19 completely reverses the sign of the estimate.
 
 \subsection{Spatial Noise}
 Finally, I investigate whether the author's estimates could merely be the result of fitting spatial noise. \cite{persistence} shows that many modern 
 papers in economics exhibit unusually large $t$-statistics due to regressing modern outcomes on historical characteristics without adequately accounting for 
 spatial noise. 
 
-Kelly suggests two solutions\footnote{He notes that commonly used Conley standard errors often use a bandwidth magnitudes too small to account for reasonable levels of spatial correlation.}: Reporting Moran's I statistic, a two dimensional analog of the Durbin-Watson statistic,
- and  generating spatial noise to replace the dependent variable and treatment variable in turn followed by measuring how much variation in outcomes can simply be explained by spatially correlated noise.
+% Kelly suggests two solutions\footnote{He notes that commonly used Conley standard errors often use a bandwidth magnitudes too small to account for reasonable levels of spatial correlation.}: Reporting Moran's I statistic, a two dimensional analog of the Durbin-Watson statistic,
+%  and  generating spatial noise to replace the dependent variable and treatment variable in turn followed by measuring how much variation in outcomes can simply be explained by spatially correlated noise.
 
 \subsubsection*{Moran's I}
 Unfortunately, whilst the dataset provided contains a `geoid2' corresponding to Census Bureau identifiers there's not enough information in the paper to map these 
 into locations. Instead, I use the OpenStreetMap API \citep{OpenStreetMap} to identify reservation locations based off a string column containing reservation names. This leads 
-to 156 matches and  26 unidentified locations. Using the remaining data I estimate Moran's I for our dependent variable using an MC simulation of 100,000 draws \footnote{Calculating Moran's analytically can be sensitive to irreguarly distributed polygons - i.e. US state/reservation boundaries.}
-with  results displayed in Figure \ref{moran}.
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[scale=0.5]{data/output/moran-plot.png}
-    \caption{Moran's I}
-    \label{moran}
-\end{figure}
+to 156 matches and  26 unidentified locations. Using the remaining data I estimate Moran's I for our dependent variable using an MC simulation of 100,000 draws\footnote{Calculating Moran's analytically can be sensitive to irreguarly distributed polygons - i.e. US state/reservation boundaries.}.
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[scale=0.3]{data/output/moran-plot.png}
+%     \caption{Moran's I}
+%     \label{moran}
+% \end{figure}
 
-We soundly reject the null hypothesis of no spatial autocorrelation with the realised draw (the dotted line) far to the right of 
-the generated draws under the null (in pink). The $p$-value associated with the test is $0.00009$.
+We soundly reject the null hypothesis of no spatial autocorrelation. The $p$-value associated with the test is $0.00009$.
 
 
 \subsubsection*{Spatial Noise Simulations}
 
 To create spatial noise I generate a Gaussian process with covariance kernel:
-
 \begin{align*}
-    \Sigma(x_i, x_j) &= \exp(- || x_i - x_j ||^2) \\
-    &= \Sigma_D
+    \Sigma(x_i, x_j) &= \exp(- || x_i - x_j ||^2) 
+    = \Sigma_D
 \end{align*}
 i.e. the inverse of the squared Euclidean distance between two reservations. I sample $1000 \times 156$ draws from the corresponding 
 Gaussian process:
@@ -324,7 +309,7 @@ points correspond to higher simulated values.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[scale=0.5]{data/output/noise-plot.png}
+    \includegraphics[scale=0.3]{data/output/noise-plot.png}
     \caption{Spatially Correlated Noise}
     \label{noise}
 \end{figure}
@@ -338,7 +323,7 @@ distributed uniformly and follow the 45 degree line.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[scale=0.5]{data/output/qq-plot.png}
+    \includegraphics[scale=0.3]{data/output/qq-plot.png}
     \caption{Simulated $p$-value QQ plot}
     \label{qq}
 \end{figure}

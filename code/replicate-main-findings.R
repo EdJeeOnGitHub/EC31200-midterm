@@ -275,7 +275,8 @@ etable(
     tex = TRUE,
     replace = TRUE,
     file = "data/output/table-2-fe.tex",
-    digits = 3
+    digits = 3,
+    fitstat = ""
 )
 
 ############################################
@@ -487,7 +488,7 @@ etable(
     file = "data/output/table-5-iv-A.tex",
     digits = 3,
     digits.stats = 3,
-    fitstat = ~ . + ivf1 + ivwald1
+    fitstat = ~  ivf1 + ivwald1
 )
 
 ## Now we fit panel B for the one instrument case.
@@ -555,5 +556,5 @@ etable(
     file = "data/output/table-5-iv-B.tex",
     digits = 3,
     digits.stats = 3,
-    fitstat = ~ . + ivf1 + ivwald1
+    fitstat = ~  ivf1 + ivwald1
 )
