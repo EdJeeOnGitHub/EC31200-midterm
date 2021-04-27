@@ -6,6 +6,8 @@ library(testthat) # testing replication
 library(fixest) # fixed effects/iv regression
 library(broom) # tidy model extraction
 
+# A list of packages to install can be found in code/install.R
+
 ############################################
 ## Data ####################################
 ############################################
